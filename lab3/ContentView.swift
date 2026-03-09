@@ -1,24 +1,35 @@
-//
-//  ContentView.swift
-//  lab3
-//
-//  Created by Zkaria Diab on 2026-03-09.
-//
-
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+struct QuizResponse: Codable {
+    let results: [Question]
+}
+
+struct Question: Codable, Identifiable {
+    let id = UUID()
+    let question: String
+    let correctAnswer: String
+    let incorrectAnswers: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case question
+        case correctAnswer = "correct_answer"
+        case incorrectAnswers = "incorrect_answers"
+    }
+
+    var allAnswers: [String] {
+        (incorrectAnswers + [correctAnswer]).shuffled()
     }
 }
 
-#Preview {
-    ContentView()
+enum QuizState {
+    case loading
+    case playing
+    case error(String)
+    case finished
+}
+
+struct ContentView: View {
+    var body: some View {
+        Text("Quiz App")
+    }
 }
