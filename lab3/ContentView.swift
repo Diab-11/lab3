@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+
 struct QuizResponse: Codable {
     let results: [Question]
 }
@@ -82,6 +83,17 @@ class QuizViewModel: ObservableObject {
     }
 }
 
+extension String {
+    var htmlDecoded: String {
+        guard let data = data(using: .utf8) else { return self }
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        return (try? NSAttributedString(data: data, options: options, documentAttributes: nil))?.string ?? self
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = QuizViewModel()
 
@@ -110,7 +122,43 @@ struct ContentView: View {
                     .buttonStyle(.borderedProminent)
                 }
             case .playing:
-                Text("Playing...")
+                if let question = viewModel.currentQuestion {
+                    VStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Question \(viewModel.currentIndex + 1) of \(viewModel.questions.count)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            ProgressView(value: viewModel.progress)
+                                .tint(.blue)
+                        }
+                        .padding(.horizontal)
+
+                        Text(question.question.htmlDecoded)
+                            .font(.title3)
+                            .bold()
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        VStack(spacing: 12) {
+                            ForEach(question.allAnswers, id: \.self) { answer in
+                                Button {
+                                    viewModel.submitAnswer(answer)
+                                } label: {
+                                    Text(answer.htmlDecoded)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        Spacer()
+                    }
+                    .padding(.top)
+                }
             case .finished:
                 Text("Finished!")
             }
