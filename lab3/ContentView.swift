@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-
 struct QuizResponse: Codable {
     let results: [Question]
 }
@@ -84,7 +83,40 @@ class QuizViewModel: ObservableObject {
 }
 
 struct ContentView: View {
+    @StateObject private var viewModel = QuizViewModel()
+
     var body: some View {
-        Text("Quiz App")
+        Group {
+            switch viewModel.state {
+            case .loading:
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading questions...")
+                        .foregroundColor(.gray)
+                }
+            case .error(let message):
+                VStack(spacing: 20) {
+                    Text("Something went wrong")
+                        .font(.title2)
+                        .bold()
+                    Text(message)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Button("Try Again") {
+                        viewModel.restart()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            case .playing:
+                Text("Playing...")
+            case .finished:
+                Text("Finished!")
+            }
+        }
+        .task {
+            await viewModel.loadQuestions()
+        }
     }
 }
