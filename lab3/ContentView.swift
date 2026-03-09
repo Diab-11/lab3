@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct QuizResponse: Codable {
     let results: [Question]
@@ -26,6 +27,60 @@ enum QuizState {
     case playing
     case error(String)
     case finished
+}
+
+@MainActor
+class QuizViewModel: ObservableObject {
+    @Published var questions: [Question] = []
+    @Published var currentIndex: Int = 0
+    @Published var score: Int = 0
+    @Published var state: QuizState = .loading
+
+    func loadQuestions() async {
+        state = .loading
+        guard let url = URL(string: "https://opentdb.com/api.php?amount=10&type=multiple") else {
+            state = .error("Invalid URL")
+            return
+        }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoded = try JSONDecoder().decode(QuizResponse.self, from: data)
+            questions = decoded.results
+            currentIndex = 0
+            score = 0
+            state = .playing
+        } catch {
+            state = .error(error.localizedDescription)
+        }
+    }
+
+    var currentQuestion: Question? {
+        guard currentIndex < questions.count else { return nil }
+        return questions[currentIndex]
+    }
+
+    var progress: Double {
+        guard !questions.isEmpty else { return 0 }
+        return Double(currentIndex) / Double(questions.count)
+    }
+
+    func submitAnswer(_ answer: String) {
+        guard let question = currentQuestion else { return }
+        if answer == question.correctAnswer {
+            score += 1
+        }
+        if currentIndex + 1 < questions.count {
+            currentIndex += 1
+        } else {
+            state = .finished
+        }
+    }
+
+    func restart() {
+        Task {
+            await loadQuestions()
+        }
+    }
 }
 
 struct ContentView: View {
