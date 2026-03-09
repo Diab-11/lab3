@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+
 struct QuizResponse: Codable {
     let results: [Question]
 }
@@ -22,6 +23,7 @@ struct Question: Codable, Identifiable {
 }
 
 enum QuizState {
+    case start
     case loading
     case playing
     case error(String)
@@ -33,7 +35,7 @@ class QuizViewModel: ObservableObject {
     @Published var questions: [Question] = []
     @Published var currentIndex: Int = 0
     @Published var score: Int = 0
-    @Published var state: QuizState = .loading
+    @Published var state: QuizState = .start
 
     func loadQuestions() async {
         state = .loading
@@ -76,9 +78,7 @@ class QuizViewModel: ObservableObject {
     }
 
     func restart() {
-        Task {
-            await loadQuestions()
-        }
+        state = .start
     }
 }
 
@@ -99,6 +99,34 @@ struct ContentView: View {
     var body: some View {
         Group {
             switch viewModel.state {
+            case .start:
+                VStack(spacing: 32) {
+                    Spacer()
+                    Text("🧠")
+                        .font(.system(size: 80))
+                    Text("Pop Quiz")
+                        .font(.largeTitle)
+                        .bold()
+                    Text("Test your knowledge with 10 random questions!")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    Button {
+                        Task {
+                            await viewModel.loadQuestions()
+                        }
+                    } label: {
+                        Text("Start Quiz")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                    }
+                    Spacer()
+                }
             case .loading:
                 VStack(spacing: 16) {
                     ProgressView()
@@ -176,9 +204,6 @@ struct ContentView: View {
                     .controlSize(.large)
                 }
             }
-        }
-        .task {
-            await viewModel.loadQuestions()
         }
     }
 }
