@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-
 struct QuizResponse: Codable {
     let results: [Question]
 }
@@ -160,7 +159,22 @@ struct ContentView: View {
                     .padding(.top)
                 }
             case .finished:
-                Text("Finished!")
+                VStack(spacing: 24) {
+                    Text("Quiz Finished!")
+                        .font(.largeTitle)
+                        .bold()
+                    Text("\(viewModel.score) / \(viewModel.questions.count)")
+                        .font(.system(size: 64, weight: .bold))
+                        .foregroundColor(.blue)
+                    Text(viewModel.score < 4 ? "Keep practicing!" : viewModel.score < 7 ? "Good job!" : "Excellent work!")
+                        .font(.title3)
+                        .foregroundColor(.gray)
+                    Button("Play Again") {
+                        viewModel.restart()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
             }
         }
         .task {
